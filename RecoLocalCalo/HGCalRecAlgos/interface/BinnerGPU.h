@@ -15,13 +15,8 @@ struct RechitForBinning {
 };
 
 typedef std::vector<std::vector<RechitForBinning>> BinningData;
+typedef std::vector<RechitForBinning> LayerData;
 
-// eta_width = 0.05
-// phi_width = 0.05
-// 2*pi/0.05 = 125
-// 1.4/0.05 = 28
-// 20 (as heuristic)
-
-std::shared_ptr<long> computeBins(std::vector<RechitForBinning> layerData);
+std::shared_ptr<long> computeBins(LayerData layerData);
 
 #endif

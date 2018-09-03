@@ -6,13 +6,13 @@
 // 1.4/0.05 = 28
 // 20 (as heuristic)
 
-ETA_BINS=28
-PHI_BINS=125
-MAX_DEPTH=20
+#define ETA_BINS 28
+#define PHI_BINS 125
+#define MAX_DEPTH 20
 
 
 std::shared_ptr<long> computeBins(std::vector<RechitForBinning> layerData) {
-    std::shared_ptr<long> hostData = new int[ETA_BINS*PHI_BINS*MAX_DEPTH];
+    std::shared_ptr<long> hostData(new long[ETA_BINS*PHI_BINS*MAX_DEPTH]);
 
     // TODO: Do the computation here
     

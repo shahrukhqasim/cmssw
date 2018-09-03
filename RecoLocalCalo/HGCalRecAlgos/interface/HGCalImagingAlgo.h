@@ -268,7 +268,6 @@ std::vector<size_t> sort_by_delta(const std::vector<KDNode> &v) const {
 }
 
 std::vector<std::vector<KDNode> > points;   //a vector of vectors of hexels, one for each layer
-BinningData binningPoints;
 //@@EM todo: the number of layers should be obtained programmatically - the range is 1-n instead of 0-n-1...
 
 std::vector<std::array<float,2> > minpos;
@@ -297,6 +296,8 @@ double calculateEnergyWithFraction(const std::vector<KDNode>&, const std::vector
 void shareEnergy(const std::vector<KDNode>&,
                  const std::vector<unsigned>&,
                  std::vector<std::vector<double> >&);
+
+BinningData binningPoints;
 };
 
 #endif
