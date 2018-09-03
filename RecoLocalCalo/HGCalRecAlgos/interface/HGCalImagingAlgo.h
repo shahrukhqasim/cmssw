@@ -15,6 +15,8 @@
 #include "DataFormats/EgammaReco/interface/BasicCluster.h"
 
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
+#include "RecoLocalCalo/HGCalRecAlgos/interface/BinnerGPU.h"
+
 
 // C/C++ headers
 #include <string>
@@ -200,16 +202,6 @@ VerbosityLevel verbosity;
 
 // initialization bool
 bool initialized;
-
-struct RechitForBinning {
-        long index;
-        float eta;
-        float phi;
-};
-
-typedef std::vector<std::vector<RechitForBinning>> BinningData;
-
-
 
 struct Hexel {
 
