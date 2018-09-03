@@ -21,6 +21,7 @@ void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
     computeThreshold();
   }
 
+
   std::vector<bool> firstHit(2 * (maxlayer + 1), true);
   for (unsigned int i = 0; i < hits.size(); ++i) {
 
@@ -62,6 +63,8 @@ void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
         Hexel(hgrh, detid, isHalf, sigmaNoise, thickness, &rhtools_),
         position.x(), position.y());
 
+    binningPoints[layer].push_back({i, position.eta,position.phi});
+
     // for each layer, store the minimum and maximum x and y coordinates for the
     // KDTreeBox boundaries
     if (firstHit[layer]) {
@@ -79,11 +82,13 @@ void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
 
   } // end loop hits
 }
+
 // Create a vector of Hexels associated to one cluster from a collection of
 // HGCalRecHits - this can be used directly to make the final cluster list -
 // this method can be invoked multiple times for the same event with different
 // input (reset should be called between events)
 void HGCalImagingAlgo::makeClusters() {
+  std::cout<<"Hello world!"<<std::endl;
   layerClustersPerLayer.resize(2 * maxlayer + 2);
   // assign all hits in each layer to a cluster core or halo
   tbb::this_task_arena::isolate([&] {

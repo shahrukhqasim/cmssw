@@ -82,6 +82,7 @@ HGCalImagingAlgo(const std::vector<double>& vecDeltas_in, double kappa_in, doubl
         minpos(2*(maxlayer+1),{
                 {0.0f,0.0f}
         }),
+        binningPoints(maxlayer+1),
         maxpos(2*(maxlayer+1),{ {0.0f,0.0f} })
 {
 }
@@ -200,6 +201,16 @@ VerbosityLevel verbosity;
 // initialization bool
 bool initialized;
 
+struct RechitForBinning {
+        long index;
+        float eta;
+        float phi;
+};
+
+typedef std::vector<std::vector<RechitForBinning>> BinningData;
+
+
+
 struct Hexel {
 
         double x;
@@ -265,6 +276,7 @@ std::vector<size_t> sort_by_delta(const std::vector<KDNode> &v) const {
 }
 
 std::vector<std::vector<KDNode> > points;   //a vector of vectors of hexels, one for each layer
+BinningData binningPoints;
 //@@EM todo: the number of layers should be obtained programmatically - the range is 1-n instead of 0-n-1...
 
 std::vector<std::array<float,2> > minpos;
@@ -293,6 +305,8 @@ double calculateEnergyWithFraction(const std::vector<KDNode>&, const std::vector
 void shareEnergy(const std::vector<KDNode>&,
                  const std::vector<unsigned>&,
                  std::vector<std::vector<double> >&);
+
+void copyToMemory();
 };
 
 #endif
