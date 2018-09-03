@@ -84,8 +84,8 @@ HGCalImagingAlgo(const std::vector<double>& vecDeltas_in, double kappa_in, doubl
         minpos(2*(maxlayer+1),{
                 {0.0f,0.0f}
         }),
-        binningPoints(2*(maxlayer+1)),
-        maxpos(2*(maxlayer+1),{ {0.0f,0.0f} })
+        maxpos(2*(maxlayer+1),{ {0.0f,0.0f} }),
+        binningPoints(2*(maxlayer+1))
 {
 }
 
