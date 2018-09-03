@@ -9,9 +9,9 @@
 
 
 struct RechitForBinning {
-        long index;
-        float eta;
-        float phi;
+        long index=-1;
+        float eta=0;
+        float phi=0;
 };
 
 typedef std::vector<std::vector<RechitForBinning>> BinningData;

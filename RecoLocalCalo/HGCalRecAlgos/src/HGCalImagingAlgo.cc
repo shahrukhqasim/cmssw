@@ -63,7 +63,7 @@ void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
         Hexel(hgrh, detid, isHalf, sigmaNoise, thickness, &rhtools_),
         position.x(), position.y());
 
-    binningPoints[layer].push_back({i, position.eta,position.phi});
+    binningPoints[layer].push_back({i, position.eta(),position.phi()});
 
     // for each layer, store the minimum and maximum x and y coordinates for the
     // KDTreeBox boundaries
