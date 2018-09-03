@@ -82,7 +82,7 @@ HGCalImagingAlgo(const std::vector<double>& vecDeltas_in, double kappa_in, doubl
         minpos(2*(maxlayer+1),{
                 {0.0f,0.0f}
         }),
-        binningPoints(maxlayer+1),
+        binningPoints(2*(maxlayer+1)),
         maxpos(2*(maxlayer+1),{ {0.0f,0.0f} })
 {
 }
@@ -305,8 +305,6 @@ double calculateEnergyWithFraction(const std::vector<KDNode>&, const std::vector
 void shareEnergy(const std::vector<KDNode>&,
                  const std::vector<unsigned>&,
                  std::vector<std::vector<double> >&);
-
-void copyToMemory();
 };
 
 #endif
