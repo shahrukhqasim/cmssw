@@ -30,7 +30,7 @@ namespace BinnerGPU {
     // 20 (as heuristic)
 
 const int ETA_BINS=28;
-const int PHI_BINS=125;
+const int PHI_BINS=126;
 const int MAX_DEPTH=20;
 
 

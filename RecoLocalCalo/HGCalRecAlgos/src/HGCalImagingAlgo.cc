@@ -12,14 +12,11 @@
 #include "tbb/task_arena.h"
 #include "tbb/tbb.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/BinnerGPU.h"
+#include <chrono>  // for high_resolution_clock
+
 
 
 void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
-    std::cout<<"Size: "<<binningPoints.size()<<std::endl;
-    std::cout<<"Size: "<<tempLayerPoints.size()<<std::endl;
-    std::cout<<"Temp: "<<(2*(maxlayer+1))<<std::endl;
-    exit(0);
-
   // loop over all hits and create the Hexel structure, skip energies below ecut
 
   if (dependSensor) {
@@ -70,10 +67,7 @@ void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
         Hexel(hgrh, detid, isHalf, sigmaNoise, thickness, &rhtools_),
         position.x(), position.y());
 
-    // binningPoints.clear();
-    // binningPoints.resize(2*(maxlayer+1));
-
-    // binningPoints[layer].push_back({i, position.eta(),position.phi()});
+    binningPoints[layer].push_back({i, position.eta(),position.phi()});
 
     // for each layer, store the minimum and maximum x and y coordinates for the
     // KDTreeBox boundaries
@@ -91,6 +85,10 @@ void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
     }
 
   } // end loop hits
+  int count = 0;
+  for(auto layer: binningPoints) {
+    std::cout<<"Layer "<<(count++)<<" Rechits: "<<layer.size()<<std::endl;
+  }
 }
 
 // Create a vector of Hexels associated to one cluster from a collection of
@@ -99,8 +97,19 @@ void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
 // input (reset should be called between events)
 void HGCalImagingAlgo::makeClusters() {
   std::cout<<"Hello world!"<<std::endl;
+  auto start = std::chrono::high_resolution_clock::now();
 
-  // BinnerGPU::computeBins(binningPoints[0]);
+  for (auto&layer: binningPoints) {
+      BinnerGPU::computeBins(layer);
+  }
+  
+
+  auto finish = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed = finish - start;
+  std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+  std::cout<<"End of the world!"<<std::endl;
+
+  exit(0);
 
   layerClustersPerLayer.resize(2 * maxlayer + 2);
   // assign all hits in each layer to a cluster core or halo
