@@ -116,8 +116,10 @@ HGCalImagingAlgo(const std::vector<double>& vecDeltas_in, double kappa_in, doubl
 	minpos(2*(maxlayer+1),{
                 {0.0f,0.0f}
         }),
-	maxpos(2*(maxlayer+1),{ {0.0f,0.0f} })
+	maxpos(2*(maxlayer+1),{ {0.0f,0.0f} }),
+        binningPoints(2*(maxlayer))
 {
+
 }
 
 virtual ~HGCalImagingAlgo()
@@ -297,7 +299,9 @@ void shareEnergy(const std::vector<KDNode>&,
                  const std::vector<unsigned>&,
                  std::vector<std::vector<double> >&);
 
-BinningData binningPoints;
+// BinningData binningPoints;
+BinningData2 binningPoints;
+LayerData tempLayerPoints;
 };
 
 #endif

@@ -11,8 +11,15 @@
 #include "DataFormats/CaloRecHit/interface/CaloID.h"
 #include "tbb/task_arena.h"
 #include "tbb/tbb.h"
+#include "RecoLocalCalo/HGCalRecAlgos/interface/BinnerGPU.h"
+
 
 void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
+    std::cout<<"Size: "<<binningPoints.size()<<std::endl;
+    std::cout<<"Size: "<<tempLayerPoints.size()<<std::endl;
+    std::cout<<"Temp: "<<(2*(maxlayer+1))<<std::endl;
+    exit(0);
+
   // loop over all hits and create the Hexel structure, skip energies below ecut
 
   if (dependSensor) {
@@ -63,7 +70,10 @@ void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
         Hexel(hgrh, detid, isHalf, sigmaNoise, thickness, &rhtools_),
         position.x(), position.y());
 
-    binningPoints[layer].push_back({i, position.eta(),position.phi()});
+    // binningPoints.clear();
+    // binningPoints.resize(2*(maxlayer+1));
+
+    // binningPoints[layer].push_back({i, position.eta(),position.phi()});
 
     // for each layer, store the minimum and maximum x and y coordinates for the
     // KDTreeBox boundaries
@@ -89,6 +99,9 @@ void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
 // input (reset should be called between events)
 void HGCalImagingAlgo::makeClusters() {
   std::cout<<"Hello world!"<<std::endl;
+
+  // BinnerGPU::computeBins(binningPoints[0]);
+
   layerClustersPerLayer.resize(2 * maxlayer + 2);
   // assign all hits in each layer to a cluster core or halo
   tbb::this_task_arena::isolate([&] {

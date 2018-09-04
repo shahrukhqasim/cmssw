@@ -4,16 +4,47 @@
 
 namespace BinnerGPU {
 
-typedef GPU::VecArray<long,MAX_DEPTH> RequiredBin;
+typedef GPU::VecArray<int,MAX_DEPTH> RequiredBin;
 
 
-std::shared_ptr<long> computeBins(std::vector<RechitForBinning> layerData) {
-    std::shared_ptr<long> hostData(new long[ETA_BINS*PHI_BINS*MAX_DEPTH]);
+__global__ void kernel_compute_histogram(RechitForBinning*dInputData, RequiredBin*dOutputData, const size_t& numRechits) {
 
-    // TODO: Do the computation here
+    size_t rechitLocation = blockIdx.x * 1024 + threadIdx.x;
 
+    if(rechitLocation >= numRechits)
+        return;
+
+    float eta = dInputData[rechitLocation].eta;
+    float phi = dInputData[rechitLocation].phi;
+    unsigned int index = dInputData[rechitLocation].index;
+
+    int etaIndex = floor((eta - 1.6) / 0.05);
+    int phiIndex = floor((phi - 0) / 0.05);
+
+    dOutputData[phiIndex*ETA_BINS + etaIndex].push_back(index);
+}
+
+
+
+std::shared_ptr<int> computeBins(std::vector<RechitForBinning> layerData) {
+    std::shared_ptr<int> hOutputData(new int[ETA_BINS*PHI_BINS*MAX_DEPTH]);
+
+    // Allocate memory and put data into device
+    RequiredBin* dOutputData;
+    RechitForBinning* dInputData;
+    cudaMalloc(&dOutputData, sizeof(RequiredBin)*ETA_BINS*PHI_BINS);
+    cudaMalloc(&dInputData, sizeof(RechitForBinning)*layerData.size());
+    cudaMemcpy(dInputData, layerData.data(), sizeof(RechitForBinning)*layerData.size(), cudaMemcpyHostToDevice);
+
+    // Call the kernel
+    const dim3 blockSize(1024,1,1);
+    const dim3 gridSize(ceil(layerData.size()/1024.0),1,1);
+    // kernel_compute_histogram <<<gridSize,blockSize>>>(dInputData, dOutputData, layerData.size());
+
+    // Copy result back!
+    cudaMemcpy(dOutputData, hOutputData.get(), sizeof(int)*ETA_BINS*PHI_BINS*MAX_DEPTH, cudaMemcpyDeviceToHost);
     
-    return hostData;
+    return hOutputData;
 }
 
 }

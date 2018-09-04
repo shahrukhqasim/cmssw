@@ -6,13 +6,20 @@
 #define Binner_GPU_h
 
 struct RechitForBinning {
-        long index=-1;
-        float eta=0;
-        float phi=0;
+        unsigned int index;
+        float eta;
+        float phi;
+};
+
+
+struct RechitForBinning2 {
+        unsigned int index;
 };
 
 typedef std::vector<std::vector<RechitForBinning>> BinningData;
 typedef std::vector<RechitForBinning> LayerData;
+
+typedef std::vector<std::vector<RechitForBinning2>> BinningData2;
 
 
 namespace BinnerGPU {
@@ -28,7 +35,7 @@ const int MAX_DEPTH=20;
 
 
 
-std::shared_ptr<long> computeBins(LayerData layerData);
+std::shared_ptr<int> computeBins(LayerData layerData);
 
 }
 
