@@ -286,7 +286,7 @@ inline double distance(const Hexel &pt1, const Hexel &pt2) const{   //2-d distan
 double calculateLocalDensity(std::vector<KDNode> &, KDTree &, const unsigned int) const;   //return max density
 double calculateDistanceToHigher(std::vector<KDNode> &) const;
 int findAndAssignClusters(std::vector<KDNode> &, KDTree &, double, KDTreeBox &, const unsigned int, std::vector<std::vector<KDNode> >&) const;
-int findAndAssignClusters_GPU(std::vector<KDNode> &, KDTree &, double, KDTreeBox &, const unsigned int, std::vector<std::vector<KDNode> >&) const; // HGCAL_GPU
+int findAndAssignClustersGPU(std::vector<KDNode> &, KDTree &, double, KDTreeBox &, const unsigned int, std::vector<std::vector<KDNode> >&) const; // HGCAL_GPU
 math::XYZPoint calculatePosition(std::vector<KDNode> &) const;
 
 // attempt to find subclusters within a given set of hexels
