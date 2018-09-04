@@ -12,6 +12,8 @@
 #include "tbb/task_arena.h"
 #include "tbb/tbb.h"
 
+std::string OPTION="GPU";
+
 void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
   // loop over all hits and create the Hexel structure, skip energies below ecut
 
@@ -108,8 +110,17 @@ void HGCalImagingAlgo::makeClusters() {
       // calculate distance to nearest point with higher density storing
       // distance (delta) and point's index
       calculateDistanceToHigher(points[i]);
-      findAndAssignClusters(points[i], hit_kdtree, maxdensity, bounds,
-                            actualLayer, layerClustersPerLayer[i]);
+
+      // launch clusterizer
+      if(OPTION=="GPU") {
+	findAndAssignClustersGPU(binningPoints, points[i], hit_kdtree, maxdensity, bounds,
+				 actualLayer, layerClustersPerLayer[i]);
+      }
+      else {
+	findAndAssignClusters(points[i], hit_kdtree, maxdensity, bounds,
+			      actualLayer, layerClustersPerLayer[i]);
+      }
+
     });
   });
 }
@@ -463,7 +474,8 @@ int HGCalImagingAlgo::findAndAssignClusters(
 }
 
 // HGCAL_GPU Version
-int HGCalImagingAlgo::findAndAssignClustersGPU(
+int HGCalImagingAlgo::findAndAssignClustersGPU(    
+    BinningData &binsGPU,
     std::vector<KDNode> &nd, KDTree &lp, double maxdensity, KDTreeBox &bounds,
     const unsigned int layer,
     std::vector<std::vector<KDNode>> &clustersOnLayer) const {
@@ -482,33 +494,45 @@ int HGCalImagingAlgo::findAndAssignClustersGPU(
   else
     delta_c = vecDeltas[2];
 
-  std::vector<size_t> rs =
-      sorted_indices(nd); // indices sorted by decreasing rho
-  std::vector<size_t> ds =
-      sort_by_delta(nd); // sort in decreasing distance to higher
-
+  // Prepare vectors of RecHits indices
+  std::vector<size_t> rs = sorted_indices(nd); // indices sorted by decreasing rho
+  std::vector<size_t> ds = sort_by_delta(nd);  // sort in decreasing distance to higher
   const unsigned int nd_size = nd.size();
-  for (unsigned int i = 0; i < nd_size; ++i) {
 
-    if (nd[ds[i]].data.delta < delta_c)
-      break; // no more cluster centers to be looked at
-    if (dependSensor) {
+  // Loop over binsGPU
+  const unsigned int nBinsGPU = binsGPU.size();
+  for (unsigned int iBin = 0; iBin < nBinsGPU; ++iBin) {
 
-      float rho_c = kappa * nd[ds[i]].data.sigmaNoise;
-      if (nd[ds[i]].data.rho < rho_c)
-        continue; // set equal to kappa times noise threshold
+    // number of RecHits in current bin
+    const unsigned int nRhGPU = binsGPU[iBin].size();
 
-    } else if (nd[ds[i]].data.rho * kappa < maxdensity)
-      continue;
+    // loop over RecHits in current bin
+    for (unsigned int iRh = 0; iRh < nRhGPU; ++iRh) {
 
-    nd[ds[i]].data.clusterIndex = nClustersOnLayer;
-    if (verbosity < pINFO) {
-      std::cout << "Adding new cluster with index " << nClustersOnLayer
-                << std::endl;
-      std::cout << "Cluster center is hit " << ds[i] << std::endl;
-    }
-    nClustersOnLayer++;
-  }
+      // find out index of RecHit within the KDNode nd
+      unsigned int i = binsGPU[iBin][iRh].index;
+
+      if (nd[ds[i]].data.delta < delta_c)
+	break; // no more cluster centers to be looked at
+      if (dependSensor) {
+
+	float rho_c = kappa * nd[ds[i]].data.sigmaNoise;
+	if (nd[ds[i]].data.rho < rho_c)
+	  continue; // set equal to kappa times noise threshold
+
+      } else if (nd[ds[i]].data.rho * kappa < maxdensity)
+	continue;
+
+      nd[ds[i]].data.clusterIndex = nClustersOnLayer;
+      if (verbosity < pINFO) {
+	std::cout << "Adding new cluster with index " << nClustersOnLayer
+		  << std::endl;
+	std::cout << "Cluster center is hit " << ds[i] << std::endl;
+      }
+      nClustersOnLayer++;
+
+    } // end loop over RecHits within current bin
+  } // end loop over binsGPU
 
   // at this point nClustersOnLayer is equal to the number of cluster centers -
   // if it is zero we are  done
