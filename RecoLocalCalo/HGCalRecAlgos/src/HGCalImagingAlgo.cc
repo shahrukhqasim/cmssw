@@ -1,4 +1,5 @@
 #include "RecoLocalCalo/HGCalRecAlgos/interface/HGCalImagingAlgo.h"
+#include <fstream>
 
 // Geometry
 #include "DataFormats/HcalDetId/interface/HcalSubdetector.h"
@@ -109,7 +110,7 @@ void HGCalImagingAlgo::makeClusters() {
   std::cout << "Elapsed time: " << elapsed.count() << " s\n";
   std::cout<<"End of the world!"<<std::endl;
 
-  exit(0);
+  //exit(0);
 
   layerClustersPerLayer.resize(2 * maxlayer + 2);
   // assign all hits in each layer to a cluster core or halo
@@ -271,13 +272,19 @@ double HGCalImagingAlgo::calculateLocalDensity(std::vector<KDNode> &nd,
   else
     delta_c = vecDeltas[2];
 
+  std::ofstream ofs;
+  ofs.open("validation.txt", std::ofstream::out | std::ofstream::app);
   // for each node calculate local density rho and store it
   for (unsigned int i = 0; i < nd.size(); ++i) {
-    // speec up search by looking within +/- delta_c window only
-    KDTreeBox search_box(nd[i].dims[0] - delta_c, nd[i].dims[0] + delta_c,
-                         nd[i].dims[1] - delta_c, nd[i].dims[1] + delta_c);
     std::vector<KDNode> found;
-    lp.search(search_box, found);
+    for(unsigned int j = 0; (j < nd.size()) && (j != i); ++j){
+    // speec up search by looking within +/- delta_c window only
+      if(fabs(nd[j].dims[0]- nd[i].dims[0]) < delta_c)
+	if(fabs(nd[j].dims[1]- nd[i].dims[1]) < delta_c){
+	  found.push_back(nd[j]);
+	  ofs << "Layer: "<< layer << " RecHit: " << i << " RecHit found (x,y): " << nd[j].dims[0] << " " << nd[j].dims[1] << "\n";
+	}
+    }
     const unsigned int found_size = found.size();
     for (unsigned int j = 0; j < found_size; j++) {
       if (distance(nd[i].data, found[j].data) < delta_c) {
@@ -286,6 +293,7 @@ double HGCalImagingAlgo::calculateLocalDensity(std::vector<KDNode> &nd,
       }
     } // end loop found
   }   // end loop nodes
+  ofs.close();
   return maxdensity;
 }
 
