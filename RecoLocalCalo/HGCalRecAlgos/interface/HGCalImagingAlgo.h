@@ -301,6 +301,7 @@ void shareEnergy(const std::vector<KDNode>&,
 
 
 BinningData binningPoints;
+BinningData searchingPoints;
 };
 
 #endif
