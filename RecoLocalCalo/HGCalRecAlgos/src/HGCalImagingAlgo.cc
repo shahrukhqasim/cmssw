@@ -102,17 +102,20 @@ void HGCalImagingAlgo::makeClusters() {
   std::cout<<"Hello world!"<<std::endl;
   auto start = std::chrono::high_resolution_clock::now();
 
+  std::vector< std::shared_ptr<int> > layerBinsGPU;
+  std::shared_ptr<int> binsGPU;
+
   for (auto&layer: binningPoints) {
-      BinnerGPU::computeBins(layer);
+      binsGPU = BinnerGPU::computeBins(layer);
+      layerBinsGPU.push_back( binsGPU );
   }
-  
+
+  const unsigned int n_layerBinsGPU = layerBinsGPU.size();
 
   auto finish = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsed = finish - start;
   std::cout << "Elapsed time: " << elapsed.count() << " s\n";
   std::cout<<"End of the world!"<<std::endl;
-
-  exit(0);
 
   layerClustersPerLayer.resize(2 * maxlayer + 2);
   // assign all hits in each layer to a cluster core or halo
@@ -135,12 +138,14 @@ void HGCalImagingAlgo::makeClusters() {
       calculateDistanceToHigher(points[i]);
 
       // define dummy binsGPU object // fixme ND
-      std::shared_ptr<int> binsGPU;
+      // std::shared_ptr<int> binsGPU;
 
       // launch clusterizer
       if(OPTION=="GPU") {
-	findAndAssignClustersGPU(binsGPU, points[i], hit_kdtree, maxdensity, bounds,
-				 actualLayer, layerClustersPerLayer[i]);
+	if( i < n_layerBinsGPU ) {
+	  findAndAssignClustersGPU(layerBinsGPU[i], points[i], hit_kdtree, maxdensity, bounds,
+				   actualLayer, layerClustersPerLayer[i]);
+	}
       }
       else {
 	findAndAssignClusters(points[i], hit_kdtree, maxdensity, bounds,
