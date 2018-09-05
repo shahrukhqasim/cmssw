@@ -277,13 +277,12 @@ double HGCalImagingAlgo::calculateLocalDensity(std::vector<KDNode> &nd,
   // for each node calculate local density rho and store it
   for (unsigned int i = 0; i < nd.size(); ++i) {
     std::vector<KDNode> found;
-    for(unsigned int j = 0; (j < nd.size()) && (j != i); ++j){
-    // speec up search by looking within +/- delta_c window only
-      if(fabs(nd[j].dims[0]- nd[i].dims[0]) < delta_c)
-	if(fabs(nd[j].dims[1]- nd[i].dims[1]) < delta_c){
+    for(unsigned int j = 0; j < nd.size(); ++j){
+      // speed up search by looking within +/- delta_c window only
+      if((std::abs(nd[j].dims[0]- nd[i].dims[0]) < delta_c) && (std::abs(nd[j].dims[1]- nd[i].dims[1]) < delta_c)){
 	  found.push_back(nd[j]);
 	  ofs << "Layer: "<< layer << " RecHit: " << i << " RecHit found (x,y): " << nd[j].dims[0] << " " << nd[j].dims[1] << "\n";
-	}
+      }
     }
     const unsigned int found_size = found.size();
     for (unsigned int j = 0; j < found_size; j++) {
@@ -292,7 +291,7 @@ double HGCalImagingAlgo::calculateLocalDensity(std::vector<KDNode> &nd,
         maxdensity = std::max(maxdensity, nd[i].data.rho);
       }
     } // end loop found
-  }   // end loop nodes
+  }  // end loop nodes
   ofs.close();
   return maxdensity;
 }
