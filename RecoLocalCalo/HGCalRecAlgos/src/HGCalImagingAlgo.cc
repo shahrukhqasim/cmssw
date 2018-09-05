@@ -547,12 +547,12 @@ int HGCalImagingAlgo::findAndAssignClustersGPU(
   const unsigned int nd_size = nd.size();
 
   // Loop over bins from the LayerData "binsGPU"
-  for(unsigned int iEta = 0; iEta < ETA_BINS; ++iEta) {
-    for(unsigned int iPhi = 0; iPhi < PHI_BINS; ++iPhi) {
-      for(unsigned int iRh = 0; iRh < MAX_DEPTH; ++iRh) {
+  for(unsigned int iEta = 0; iEta < BinnerGPU::ETA_BINS; ++iEta) {
+    for(unsigned int iPhi = 0; iPhi < BinnerGPU::PHI_BINS; ++iPhi) {
+      for(unsigned int iRh = 0; iRh < BinnerGPU::MAX_DEPTH; ++iRh) {
 
 	// find out actual index of each RecHit in this (eta,phi) bin
-	unsigned int idxRh = iRh + MAX_DEPTH * (iEta + iPhi * ETA_BINS);
+	unsigned int idxRh = iRh + BinnerGPU::MAX_DEPTH * (iEta + iPhi * BinnerGPU::ETA_BINS);
 
 	// find out index of RecHit within the KDNode nd
 	unsigned int i = binsGPU.get()[idxRh];
