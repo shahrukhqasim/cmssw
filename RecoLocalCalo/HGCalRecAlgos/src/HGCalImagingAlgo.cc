@@ -112,12 +112,13 @@ void HGCalImagingAlgo::makeClusters() {
       // distance (delta) and point's index
       calculateDistanceToHigher(points[i]);
 
+      // define dummy binsGPU object // fixme ND
+      std::shared_ptr<int> binsGPU;
+
       // launch clusterizer
       if(OPTION=="GPU") {
-	if( i < binningPoints.size() ) {
-	  findAndAssignClustersGPU(binningPoints[i], points[i], hit_kdtree, maxdensity, bounds,
-				   actualLayer, layerClustersPerLayer[i]);
-	}
+	findAndAssignClustersGPU(binsGPU, points[i], hit_kdtree, maxdensity, bounds,
+				 actualLayer, layerClustersPerLayer[i]);
       }
       else {
 	findAndAssignClusters(points[i], hit_kdtree, maxdensity, bounds,
@@ -499,7 +500,7 @@ int HGCalImagingAlgo::findAndAssignClusters(
 
 // HGCAL_GPU Version
 int HGCalImagingAlgo::findAndAssignClustersGPU(    
-    LayerData &binsGPU,
+    std::shared_ptr<int> binsGPU,
     std::vector<KDNode> &nd, KDTree &lp, double maxdensity, KDTreeBox &bounds,
     const unsigned int layer,
     std::vector<std::vector<KDNode>> &clustersOnLayer) const {
@@ -532,7 +533,7 @@ int HGCalImagingAlgo::findAndAssignClustersGPU(
 	unsigned int idxRh = iRh + MAX_DEPTH * (iEta + iPhi * ETA_BINS);
 
 	// find out index of RecHit within the KDNode nd
-	unsigned int i = binsGPU[idxRh].index;
+	unsigned int i = binsGPU.get()[idxRh];
 
 	if (nd[ds[i]].data.delta < delta_c)
 	  break; // no more cluster centers to be looked at
