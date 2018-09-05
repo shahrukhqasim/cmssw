@@ -529,11 +529,7 @@ int HGCalImagingAlgo::findAndAssignClustersGPU(
       for(unsigned int iRh = 0; iRh < MAX_DEPTH; ++iRh) {
 
 	// find out actual index of each RecHit in this (eta,phi) bin
-	unsigned int idxRh = iEta + PHI_BINS * (iPhi + MAX_DEPTH * iRh) ; // correct?
-	/*
-	  Flat[ETA_BINS * PHI_BINS * MAX_DEPTH]
-	  Flat[iEta + PHI_BINS * (iPhi + MAX_DEPTH * iRh)] = Original[x, y, z]
-	*/
+	unsigned int idxRh = iRh + MAX_DEPTH * (iEta + iPhi * ETA_BINS);
 
 	// find out index of RecHit within the KDNode nd
 	unsigned int i = binsGPU[idxRh].index;
