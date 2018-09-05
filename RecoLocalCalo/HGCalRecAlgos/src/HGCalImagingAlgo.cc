@@ -11,6 +11,10 @@
 #include "DataFormats/CaloRecHit/interface/CaloID.h"
 #include "tbb/task_arena.h"
 #include "tbb/tbb.h"
+#include "RecoLocalCalo/HGCalRecAlgos/interface/BinnerGPU.h"
+#include <chrono>  // for high_resolution_clock
+
+
 
 //std::string OPTION="GPU";
 std::string OPTION="STD";
@@ -84,6 +88,10 @@ void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
     }
 
   } // end loop hits
+  int count = 0;
+  for(auto layer: binningPoints) {
+    std::cout<<"Layer "<<(count++)<<" Rechits: "<<layer.size()<<std::endl;
+  }
 }
 
 // Create a vector of Hexels associated to one cluster from a collection of
@@ -92,6 +100,20 @@ void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
 // input (reset should be called between events)
 void HGCalImagingAlgo::makeClusters() {
   std::cout<<"Hello world!"<<std::endl;
+  auto start = std::chrono::high_resolution_clock::now();
+
+  for (auto&layer: binningPoints) {
+      BinnerGPU::computeBins(layer);
+  }
+  
+
+  auto finish = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed = finish - start;
+  std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+  std::cout<<"End of the world!"<<std::endl;
+
+  exit(0);
+
   layerClustersPerLayer.resize(2 * maxlayer + 2);
   // assign all hits in each layer to a cluster core or halo
   tbb::this_task_arena::isolate([&] {
