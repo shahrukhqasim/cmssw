@@ -12,7 +12,8 @@
 #include "tbb/task_arena.h"
 #include "tbb/tbb.h"
 
-std::string OPTION="GPU";
+//std::string OPTION="GPU";
+std::string OPTION="STD";
 
 void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
   // loop over all hits and create the Hexel structure, skip energies below ecut
@@ -113,8 +114,10 @@ void HGCalImagingAlgo::makeClusters() {
 
       // launch clusterizer
       if(OPTION=="GPU") {
-	findAndAssignClustersGPU(binningPoints, points[i], hit_kdtree, maxdensity, bounds,
-				 actualLayer, layerClustersPerLayer[i]);
+	if( i < binningPoints.size() ) {
+	  findAndAssignClustersGPU(binningPoints[i], points[i], hit_kdtree, maxdensity, bounds,
+				   actualLayer, layerClustersPerLayer[i]);
+	}
       }
       else {
 	findAndAssignClusters(points[i], hit_kdtree, maxdensity, bounds,
@@ -129,7 +132,18 @@ std::vector<reco::BasicCluster> HGCalImagingAlgo::getClusters(bool doSharing) {
 
   reco::CaloID caloID = reco::CaloID::DET_HGCAL_ENDCAP;
   std::vector<std::pair<DetId, float>> thisCluster;
+
+  unsigned int iLayerCounter=0;
+
   for (auto &clsOnLayer : layerClustersPerLayer) {
+
+    const unsigned int nClusters = clsOnLayer.size();
+
+    ++iLayerCounter; // Layer are indexed starting from 1
+    if (verbosity < pINFO) {
+      std::cout << "[VALIDATION] | Layer " << iLayerCounter << " | nClusters=" << nClusters << " |" << std::endl;
+    }
+
     for (unsigned int i = 0; i < clsOnLayer.size(); ++i) {
       double energy = 0;
       Point position;
@@ -187,13 +201,23 @@ std::vector<reco::BasicCluster> HGCalImagingAlgo::getClusters(bool doSharing) {
           thisCluster.emplace_back(it.data.detid, (it.data.isHalo ? 0.f : 1.f));
         }
         if (verbosity < pINFO) {
-          std::cout << "******** NEW CLUSTER (HGCIA) ********" << std::endl;
-          std::cout << "Index          " << i << std::endl;
-          std::cout << "No. of cells = " << clsOnLayer[i].size() << std::endl;
-          std::cout << "     Energy     = " << energy << std::endl;
-          std::cout << "     Phi        = " << position.phi() << std::endl;
-          std::cout << "     Eta        = " << position.eta() << std::endl;
-          std::cout << "*****************************" << std::endl;
+
+	  std::cout << "[VALIDATION]"
+		    << " | Layer: "   << iLayerCounter
+		    << " | Cluster: " << i
+		    << " | #Cells: "  << clsOnLayer[i].size()
+		    << " | E: "       << energy
+		    << " | Eta: "     << position.eta()
+		    << " | Phi: "     << position.phi()
+		    << " |" << std::endl;
+	    
+          // std::cout << "******** NEW CLUSTER (HGCIA) ********" << std::endl;
+          // std::cout << "Index          " << i << std::endl;
+          // std::cout << "No. of cells = " << clsOnLayer[i].size() << std::endl;
+          // std::cout << "     Energy     = " << energy << std::endl;
+          // std::cout << "     Phi        = " << position.phi() << std::endl;
+          // std::cout << "     Eta        = " << position.eta() << std::endl;
+          // std::cout << "*****************************" << std::endl;
         }
         clusters_v.emplace_back(energy, position, caloID, thisCluster, algoId);
         thisCluster.clear();
@@ -475,7 +499,7 @@ int HGCalImagingAlgo::findAndAssignClusters(
 
 // HGCAL_GPU Version
 int HGCalImagingAlgo::findAndAssignClustersGPU(    
-    BinningData &binsGPU,
+    LayerData &binsGPU,
     std::vector<KDNode> &nd, KDTree &lp, double maxdensity, KDTreeBox &bounds,
     const unsigned int layer,
     std::vector<std::vector<KDNode>> &clustersOnLayer) const {
@@ -499,40 +523,43 @@ int HGCalImagingAlgo::findAndAssignClustersGPU(
   std::vector<size_t> ds = sort_by_delta(nd);  // sort in decreasing distance to higher
   const unsigned int nd_size = nd.size();
 
-  // Loop over binsGPU
-  const unsigned int nBinsGPU = binsGPU.size();
-  for (unsigned int iBin = 0; iBin < nBinsGPU; ++iBin) {
+  // Loop over bins from the LayerData "binsGPU"
+  for(unsigned int iEta = 0; iEta < ETA_BINS; ++iEta) {
+    for(unsigned int iPhi = 0; iPhi < PHI_BINS; ++iPhi) {
+      for(unsigned int iRh = 0; iRh < MAX_DEPTH; ++iRh) {
 
-    // number of RecHits in current bin
-    const unsigned int nRhGPU = binsGPU[iBin].size();
+	// find out actual index of each RecHit in this (eta,phi) bin
+	unsigned int idxRh = iEta + PHI_BINS * (iPhi + MAX_DEPTH * iRh) ; // correct?
+	/*
+	  Flat[ETA_BINS * PHI_BINS * MAX_DEPTH]
+	  Flat[iEta + PHI_BINS * (iPhi + MAX_DEPTH * iRh)] = Original[x, y, z]
+	*/
 
-    // loop over RecHits in current bin
-    for (unsigned int iRh = 0; iRh < nRhGPU; ++iRh) {
+	// find out index of RecHit within the KDNode nd
+	unsigned int i = binsGPU[idxRh].index;
 
-      // find out index of RecHit within the KDNode nd
-      unsigned int i = binsGPU[iBin][iRh].index;
+	if (nd[ds[i]].data.delta < delta_c)
+	  break; // no more cluster centers to be looked at
+	if (dependSensor) {
 
-      if (nd[ds[i]].data.delta < delta_c)
-	break; // no more cluster centers to be looked at
-      if (dependSensor) {
+	  float rho_c = kappa * nd[ds[i]].data.sigmaNoise;
+	  if (nd[ds[i]].data.rho < rho_c)
+	    continue; // set equal to kappa times noise threshold
 
-	float rho_c = kappa * nd[ds[i]].data.sigmaNoise;
-	if (nd[ds[i]].data.rho < rho_c)
-	  continue; // set equal to kappa times noise threshold
+	} else if (nd[ds[i]].data.rho * kappa < maxdensity)
+	  continue;
 
-      } else if (nd[ds[i]].data.rho * kappa < maxdensity)
-	continue;
+	nd[ds[i]].data.clusterIndex = nClustersOnLayer;
+	if (verbosity < pINFO) {
+	  std::cout << "Adding new cluster with index " << nClustersOnLayer
+		    << std::endl;
+	  std::cout << "Cluster center is hit " << ds[i] << std::endl;
+	}
+	nClustersOnLayer++;
 
-      nd[ds[i]].data.clusterIndex = nClustersOnLayer;
-      if (verbosity < pINFO) {
-	std::cout << "Adding new cluster with index " << nClustersOnLayer
-		  << std::endl;
-	std::cout << "Cluster center is hit " << ds[i] << std::endl;
-      }
-      nClustersOnLayer++;
-
-    } // end loop over RecHits within current bin
-  } // end loop over binsGPU
+      } // end loop over MAX_DEPTH
+    } // end loop PHI_BINS
+  } // end loop ETA_BINS
 
   // at this point nClustersOnLayer is equal to the number of cluster centers -
   // if it is zero we are  done

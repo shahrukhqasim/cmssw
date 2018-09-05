@@ -54,7 +54,8 @@ enum VerbosityLevel { pDEBUG = 0, pWARNING = 1, pINFO = 2, pERROR = 3 };
 HGCalImagingAlgo() : vecDeltas(), kappa(1.), ecut(0.),
         sigma2(1.0),
         algoId(reco::CaloCluster::undefined),
-        verbosity(pERROR),initialized(false){
+        //verbosity(pERROR),initialized(false){
+        verbosity(pDEBUG),initialized(false){ // fixme ND
 }
 
 HGCalImagingAlgo(const std::vector<double>& vecDeltas_in, double kappa_in, double ecut_in,
@@ -66,7 +67,8 @@ HGCalImagingAlgo(const std::vector<double>& vecDeltas_in, double kappa_in, doubl
                  double fcPerEle_in,
                  const std::vector<double>& nonAgedNoises_in,
                  double noiseMip_in,
-                 VerbosityLevel the_verbosity = pERROR) :
+                 //VerbosityLevel the_verbosity = pERROR) :
+                 VerbosityLevel the_verbosity = pDEBUG) : // fixme ND
         vecDeltas(vecDeltas_in), kappa(kappa_in),
         ecut(ecut_in),
         sigma2(1.0),
@@ -78,14 +80,15 @@ HGCalImagingAlgo(const std::vector<double>& vecDeltas_in, double kappa_in, doubl
         fcPerEle(fcPerEle_in),
         nonAgedNoises(nonAgedNoises_in),
         noiseMip(noiseMip_in),
-        verbosity(the_verbosity),
+	//verbosity(the_verbosity), 
+        verbosity(pDEBUG), // fixme ND
         initialized(false),
         points(2*(maxlayer+1)),
         minpos(2*(maxlayer+1),{
                 {0.0f,0.0f}
         }),
         maxpos(2*(maxlayer+1),{ {0.0f,0.0f} }),
-        binningPoints(2*(maxlayer+1))
+	binningPoints(2*(maxlayer+1))
 {
 }
 
@@ -99,7 +102,8 @@ HGCalImagingAlgo(const std::vector<double>& vecDeltas_in, double kappa_in, doubl
                  double fcPerEle_in,
                  const std::vector<double>& nonAgedNoises_in,
                  double noiseMip_in,
-                 VerbosityLevel the_verbosity = pERROR) : vecDeltas(vecDeltas_in), kappa(kappa_in),
+                 //VerbosityLevel the_verbosity = pERROR) : vecDeltas(vecDeltas_in), kappa(kappa_in),
+                 VerbosityLevel the_verbosity = pDEBUG) : vecDeltas(vecDeltas_in), kappa(kappa_in), // fixme ND
         ecut(ecut_in),
         sigma2(std::pow(showerSigma,2.0)),
         algoId(algoId_in),
@@ -110,7 +114,8 @@ HGCalImagingAlgo(const std::vector<double>& vecDeltas_in, double kappa_in, doubl
         fcPerEle(fcPerEle_in),
         nonAgedNoises(nonAgedNoises_in),
         noiseMip(noiseMip_in),
-        verbosity(the_verbosity),
+	//verbosity(the_verbosity),
+	verbosity(pDEBUG), // fixme ND
         initialized(false),
         points(2*(maxlayer+1)),
 	minpos(2*(maxlayer+1),{
@@ -286,7 +291,7 @@ inline double distance(const Hexel &pt1, const Hexel &pt2) const{   //2-d distan
 double calculateLocalDensity(std::vector<KDNode> &, KDTree &, const unsigned int) const;   //return max density
 double calculateDistanceToHigher(std::vector<KDNode> &) const;
 int findAndAssignClusters(std::vector<KDNode> &, KDTree &, double, KDTreeBox &, const unsigned int, std::vector<std::vector<KDNode> >&) const;
-int findAndAssignClustersGPU(BinningData &, std::vector<KDNode> &, KDTree &, double, KDTreeBox &, const unsigned int, std::vector<std::vector<KDNode> >&) const; // HGCAL_GPU
+int findAndAssignClustersGPU(LayerData &, std::vector<KDNode> &, KDTree &, double, KDTreeBox &, const unsigned int, std::vector<std::vector<KDNode> >&) const; // HGCAL_GPU
 math::XYZPoint calculatePosition(std::vector<KDNode> &) const;
 
 // attempt to find subclusters within a given set of hexels
