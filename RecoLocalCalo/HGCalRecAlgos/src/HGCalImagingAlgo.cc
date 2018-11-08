@@ -16,8 +16,8 @@
 
 
 
-//std::string OPTION="GPU";
-std::string OPTION="STD";
+std::string OPTION="GPU";
+//std::string OPTION="STD";
 
 void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
   // loop over all hits and create the Hexel structure, skip energies below ecut
@@ -99,23 +99,27 @@ void HGCalImagingAlgo::populate(const HGCRecHitCollection &hits) {
 // this method can be invoked multiple times for the same event with different
 // input (reset should be called between events)
 void HGCalImagingAlgo::makeClusters() {
-  std::cout<<"Hello world!"<<std::endl;
-  auto start = std::chrono::high_resolution_clock::now();
+
+  if (verbosity < pINFO) 
+    std::cout << "- Start makeClusters()" << std::endl
+	      << "- Build layerBins"      << std::endl;
 
   std::vector< std::shared_ptr<int> > layerBinsGPU;
   std::shared_ptr<int> binsGPU;
 
+  auto start = std::chrono::high_resolution_clock::now();
   for (auto&layer: binningPoints) {
       binsGPU = BinnerGPU::computeBins(layer);
       layerBinsGPU.push_back( binsGPU );
   }
+  auto finish = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed = finish - start;
 
   const unsigned int n_layerBinsGPU = layerBinsGPU.size();
 
-  auto finish = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed = finish - start;
-  std::cout << "Elapsed time: " << elapsed.count() << " s\n";
-  std::cout<<"End of the world!"<<std::endl;
+  if (verbosity < pINFO) 
+    std::cout << "- Elapsed time: " << elapsed.count() << " s" << std::endl
+	      << "- Size of layerBinsGPU: " << n_layerBinsGPU  << std::endl;
 
   layerClustersPerLayer.resize(2 * maxlayer + 2);
   // assign all hits in each layer to a cluster core or halo
@@ -130,6 +134,9 @@ void HGCalImagingAlgo::makeClusters() {
               ? (i - (maxlayer + 1))
               : i; // maps back from index used for KD trees to actual layer
 
+      if (verbosity < pINFO) 
+	std::cout << "-- layer i=" << i << " ; actualLayer=" << actualLayer << std::endl;
+
       double maxdensity = calculateLocalDensity(
           points[i], hit_kdtree, actualLayer); // also stores rho (energy
                                                // density) for each point (node)
@@ -142,7 +149,9 @@ void HGCalImagingAlgo::makeClusters() {
 
       // launch clusterizer
       if(OPTION=="GPU") {
+	if (verbosity < pINFO) std::cout << "-- Launching findAndAssignClustersGPU()" << std::endl;
 	if( i < n_layerBinsGPU ) {
+	  if (verbosity < pINFO) std::cout << "-- i=" << i << " < n_layerBinsGPU=" << n_layerBinsGPU << std::endl;
 	  findAndAssignClustersGPU(layerBinsGPU[i], points[i], hit_kdtree, maxdensity, bounds,
 				   actualLayer, layerClustersPerLayer[i]);
 	}
@@ -537,6 +546,8 @@ int HGCalImagingAlgo::findAndAssignClustersGPU(
   // by the number  of clusters found. This is always equal to the number of
   // cluster centers...
 
+  if (verbosity < pINFO) std::cout << "--- Start findAndAssignClustersGPU()" << std::endl;
+
   unsigned int nClustersOnLayer = 0;
   float delta_c; // critical distance
   if (layer <= lastLayerEE)
@@ -551,13 +562,16 @@ int HGCalImagingAlgo::findAndAssignClustersGPU(
   std::vector<size_t> ds = sort_by_delta(nd);  // sort in decreasing distance to higher
   const unsigned int nd_size = nd.size();
 
-  // Loop over bins from the LayerData "binsGPU"
+  // Loop over bins from binsGPU
+  if (verbosity < pINFO) std::cout << "--- Start loop over bins from binsGPU" << std::endl;
   for(unsigned int iEta = 0; iEta < BinnerGPU::ETA_BINS; ++iEta) {
     for(unsigned int iPhi = 0; iPhi < BinnerGPU::PHI_BINS; ++iPhi) {
       for(unsigned int iRh = 0; iRh < BinnerGPU::MAX_DEPTH; ++iRh) {
 
 	// find out actual index of each RecHit in this (eta,phi) bin
 	unsigned int idxRh = iRh + BinnerGPU::MAX_DEPTH * (iEta + iPhi * BinnerGPU::ETA_BINS);
+	if (verbosity < pINFO) 
+	  std::cout << "---- idxRh( iEta=" << iEta << " , iPhi=" << iPhi << " , iRh=" << iRh << " ) = " << idxRh << std::endl;
 
 	// find out index of RecHit within the KDNode nd
 	unsigned int i = binsGPU.get()[idxRh];
