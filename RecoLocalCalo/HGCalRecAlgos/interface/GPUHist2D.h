@@ -1,6 +1,6 @@
 #include <memory>
 #include <cmath>
-#include "GPUVecArray.h"
+#include "HeterogeneousCore/CUDAUtilities/interface/GPUVecArray.h"
 
 #ifndef GPUHist2D_h
 #define GPUHist2D_h
